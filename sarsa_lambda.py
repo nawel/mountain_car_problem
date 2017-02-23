@@ -13,7 +13,7 @@ class Sarsa_lambda():
     Control method with function approximation
     """
     
-    def __init__(self, nteta=300, gamma=1, lmbda=0.9, alpha=0.5, epsilon=0.05):
+    def __init__(self, nteta=300, gamma=1, lmbda=0.9, alpha=0.9, epsilon=0.05):
        
         self.gamma=gamma
         self.lmbda=lmbda
@@ -50,6 +50,8 @@ class Sarsa_lambda():
     def learn(self, n_episodes, maxstep):
         " Run SARSA lambda algorithm over n_episodes"
         
+        stats = plotting.EpisodeStats(episode_lengths=np.zeros(n_episodes),episode_rewards=np.zeros(n_episodes)) 
+    
         for e in range(n_episodes):
             # init the environement and take the first state
             state = env.reset()
@@ -72,29 +74,41 @@ class Sarsa_lambda():
                 #loop over steps in same episode
                 
                 for f in range(self.ntiles):
+                    for a in range(3):
+                        if (a!=action):
+                            self.z[self.features[a][f]]=0
+                    
+                for f in range(self.ntiles):
                     self.z[self.features[action][f]]=1
                     
-                    state, reward, done, _ = env.step(action)
-                    
-                    delta=reward-self.Q[action]
-                    
-                    if not done:
-                        #compute features for new  state
-                        self.compute_features(state)
+                state, reward, done, _ = env.step(action)
+                
+                stats.episode_rewards[e] += reward
+                stats.episode_lengths[e] = stp
+                
+                
 
-                        #compute new states values for action value
-                        self.compute_action_value(None)
+                delta=reward-self.Q[action]
 
-                        action=np.argmax(self.Q)
+                if not done:
+                    #compute features for new  state
+                    self.compute_features(state)
 
-                        #epsilon greedy policy
-                        if np.random.rand() < self.epsilon:
-                            action= np.random.choice(3,1)[0]
+                    #compute new states values for action value
+                    self.compute_action_value(None)
 
-                        delta += self.gamma * self.Q[action]
-                 
-                    self.teta+= (self.alpha/self.ntiles)*delta *self.z
-                    self.compute_action_value(action)
-                    self.z*=self.gamma*self.lmbda #decaying traces
+                    action=np.argmax(self.Q)
+
+                    #epsilon greedy policy
+                    if np.random.rand() < self.epsilon:
+                        action= np.random.choice(3,1)[0]
+
+                    delta += self.gamma * self.Q[action]
+
+                self.teta+= (self.alpha/self.ntiles)*delta *self.z
+                self.compute_action_value(action)
+                self.z*=self.gamma*self.lmbda #decaying traces
+        
+        return stats
 
         
