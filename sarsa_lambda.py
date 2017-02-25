@@ -1,11 +1,43 @@
 %matplotlib inline
-
+import random
 import gym
 import itertools
 import matplotlib
 import numpy as np
 import tiles
 env = gym.envs.make("MountainCar-v0")
+import sys
+if "../" not in sys.path:
+    sys.path.append("../") 
+
+from lib import plotting
+matplotlib.style.use('ggplot')
+
+
+from pylab import random, cos
+
+def reset_env():
+    position = -0.6 + np.random.rand()*0.2
+    return [position, 0.0]
+
+def next_step(S,A):
+    [position,velocity] = S
+    if not A in (0,1,2):
+        print 'Invalid action:', A
+        raise StandardError
+    R = -1
+    velocity += 0.001*(A-1) - 0.0025*cos(3*position)
+    if velocity < -0.07:
+        velocity = -0.07
+    elif velocity >= 0.07:
+        velocity = 0.06999999
+    position += velocity
+    if position >= 0.5:
+        return R,[position,velocity],True
+    if position < -1.2:
+        position = -1.2
+        velocity = 0.0
+    return R,[position,velocity],False
 
 
 class Sarsa_lambda():
@@ -13,7 +45,7 @@ class Sarsa_lambda():
     Control method with function approximation
     """
     
-    def __init__(self, nteta=300, gamma=1, lmbda=0.9, alpha=0.9, epsilon=0.05):
+    def __init__(self, nteta=3000, gamma=1, lmbda=0.1, alpha=0.5, epsilon=0.05):
        
         self.gamma=gamma
         self.lmbda=lmbda
@@ -25,9 +57,10 @@ class Sarsa_lambda():
         self.ntiles=10
         
         self.Q=np.zeros(3) #action value function
-        self.teta=np.zeros(nteta) #parameter of gradient descent
+        self.teta=theta = -0.01*np.random.randn(nteta) #parameter of gradient descent
         self.features=np.zeros((3,10)) #matrix of features (action, feature)
         self.z=np.zeros(nteta) #eligibility traces vector
+        
         
     def compute_action_value(self, action):
         " Compute action value for current step"
@@ -46,6 +79,14 @@ class Sarsa_lambda():
         
         for a in range(3):
             self.features[a]=tiles.getTiles(self.ntiles, state, self.nteta,intVars=[a])
+            
+    def greedy(self):
+        "Compute action with epsilon greedy"
+        if np.random.rand() < self.epsilon:
+            return np.random.choice(3,1)[0]
+        else:
+            return np.argmax(self.Q)            
+           
     
     def learn(self, n_episodes, maxstep):
         " Run SARSA lambda algorithm over n_episodes"
@@ -53,62 +94,37 @@ class Sarsa_lambda():
         stats = plotting.EpisodeStats(episode_lengths=np.zeros(n_episodes),episode_rewards=np.zeros(n_episodes)) 
     
         for e in range(n_episodes):
-            # init the environement and take the first state
-            state = env.reset()
-                       
-            #clear eligibility traces
-            self.z=np.zeros(self.nteta)
             
-            #compute features for this state
-            self.compute_features(state)
+            state = reset_env() # init the environement and take the first state
+            self.z=np.zeros(self.nteta)  #clear eligibility traces
+            self.compute_features(state) #compute features for this state
+            self.compute_action_value(None)#compute new states values for action value
+            action=self.greedy()  #take the argmax with epsilon probability
             
-            #compute new states values for action value
-            self.compute_action_value(None)
-            
-            #take the argmax with epsilon probability
-            action=np.argmax(self.Q)
-            if np.random.rand() < self.epsilon:
-                action= np.random.choice(3,1)[0]
-            
-            for stp in range(maxstep):
-                #loop over steps in same episode
+            for stp in range(maxstep):#loop over steps in same episode
                 
-                for f in range(self.ntiles):
-                    for a in range(3):
-                        if (a!=action):
-                            self.z[self.features[a][f]]=0
-                    
                 for f in range(self.ntiles):
                     self.z[self.features[action][f]]=1
+                                       
                     
-                state, reward, done, _ = env.step(action)
+                reward, state, done= next_step(state,action)
                 
+                #stats
                 stats.episode_rewards[e] += reward
                 stats.episode_lengths[e] = stp
-                
-                
 
                 delta=reward-self.Q[action]
 
-                if not done:
-                    #compute features for new  state
-                    self.compute_features(state)
-
-                    #compute new states values for action value
-                    self.compute_action_value(None)
-
-                    action=np.argmax(self.Q)
-
-                    #epsilon greedy policy
-                    if np.random.rand() < self.epsilon:
-                        action= np.random.choice(3,1)[0]
-
+                if not done:                  
+                    self.compute_features(state) #compute features for new  state
+                    self.compute_action_value(None) #compute new states values for action value
+                    action=self.greedy()
                     delta += self.gamma * self.Q[action]
+                if done:
+                    break
 
                 self.teta+= (self.alpha/self.ntiles)*delta *self.z
-                self.compute_action_value(action)
-                self.z*=self.gamma*self.lmbda #decaying traces
-        
+                #self.compute_action_value(action)    
+                self.z=self.gamma*self.lmbda * self.z#decaying trace
+                
         return stats
-
-        
