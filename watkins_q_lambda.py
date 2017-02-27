@@ -12,7 +12,7 @@ if "../" not in sys.path:
 
 from lib import plotting
 matplotlib.style.use('ggplot')
-from mountaincar_env import *
+#from mountaincar_env import *
 
 class Watkins_Q_lambda():
     """
