@@ -78,6 +78,9 @@ class Sarsa_lambda():
             for stp in range(maxstep):#loop over steps in same episode
                 
                 for f in range(self.ntiles):
+                    for a in range(3):
+                        if(a!=action):
+                            self.z[self.features[a][f]]=0
                     self.z[self.features[action][f]]=1
                                        
                     
@@ -102,3 +105,5 @@ class Sarsa_lambda():
                 self.z=self.gamma*self.lmbda * self.z#decaying trace
                 
         return stats
+
+        
