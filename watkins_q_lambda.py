@@ -87,13 +87,16 @@ class Watkins_Q_lambda():
                 delta=reward-self.Q[action]
                 
                 for f in range(self.ntiles):
+                    for a in range(3):
+                        if(a!=action):
+                            self.z[self.features[a][f]]=0
                     self.z[self.features[action][f]]=1
                     
                 if done:
                     self.teta+= (self.alpha/self.ntiles)*delta *self.z
                     break
                                   
-                self.compute_features(state) #compute features for new  state
+                self.compute_features(new_state) #compute features for new  state
                 self.compute_action_value(None) #compute new states values for action value
                 
                 q_max=np.max(self.Q)
