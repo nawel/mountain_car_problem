@@ -20,7 +20,9 @@ class Watkins_Q_lambda():
     """
     
     def __init__(self, nteta=3000, gamma=0.8, lmbda=0.1, alpha=0.05, epsilon=0.05):
-       
+        """
+        Init parameters
+        """
         self.gamma=gamma
         self.lmbda=lmbda
         self.alpha=alpha
@@ -28,7 +30,7 @@ class Watkins_Q_lambda():
         self.nteta=nteta #number of parameters
         
         
-        self.ntiles=10
+        self.ntiles=10 #number of tiles
         
         self.Q=np.zeros(3) #action value function
         self.teta=theta = -0.01*np.random.randn(nteta) #parameter of gradient descent
@@ -50,7 +52,7 @@ class Watkins_Q_lambda():
                 
     def compute_features(self, state):
         "Compute features for currunt state"
-        
+    
         for a in range(3):
             self.features[a]=tiles.getTiles(self.ntiles, state, self.nteta,intVars=[a])
             
@@ -84,8 +86,10 @@ class Watkins_Q_lambda():
                 stats.episode_rewards[e] += reward
                 stats.episode_lengths[e] = stp
                 
+                #compute delta
                 delta=reward-self.Q[action]
                 
+                #replacing traces
                 for f in range(self.ntiles):
                     for a in range(3):
                         if(a!=action):
@@ -99,11 +103,11 @@ class Watkins_Q_lambda():
                 self.compute_features(new_state) #compute features for new  state
                 self.compute_action_value(None) #compute new states values for action value
                 
+                #tax maximum action value
                 q_max=np.max(self.Q)
                 delta += self.gamma * q_max
 
-                self.teta+= (self.alpha/self.ntiles)*delta *self.z
-                #self.compute_action_value(action)    
+                self.teta+= (self.alpha/self.ntiles)*delta *self.z #update parameters
                 self.z=self.gamma*self.lmbda * self.z#decaying trace
                 state=new_state
                 
