@@ -1,20 +1,26 @@
-from pylab import random, cos
+"""
+Simulation of mountain car environement
+"""
+import numpy as np
 
 def reset_env():
     position = -0.6 + np.random.rand()*0.2
     return [position, 0.0]
 
-def next_step(S,A):
-    [position,velocity] = S
-    if not A in (0,1,2):
-        print 'Invalid action:', A
+def next_step(state,action):
+    """
+    Move to next state
+    """
+    [position,velocity] = state
+    if not action in (0,1,2):
+        print 'Invalid action:', action
         raise StandardError
     R = -1
-    velocity += 0.001*(A-1) - 0.0025*cos(3*position)
+    velocity += 0.001*(action-1) - 0.0025*np.cos(3*position)
     if velocity < -0.07:
         velocity = -0.07
     elif velocity >= 0.07:
-        velocity = 0.06999999
+        velocity = 0.07
     position += velocity
     if position >= 0.5:
         return R,None,True
