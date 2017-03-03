@@ -28,7 +28,7 @@ class Sarsa_lambda():
         self.nteta=nteta #number of parameters
         
         
-        self.ntiles=10
+        self.ntiles=10 #number of tiles
         
         self.Q=np.zeros(3) #action value function
         self.teta=theta = -0.01*np.random.randn(nteta) #parameter of gradient descent
@@ -77,14 +77,14 @@ class Sarsa_lambda():
             
             for stp in range(maxstep):#loop over steps in same episode
                 
-                for f in range(self.ntiles):
+                for f in range(self.ntiles): #replacing traces
                     for a in range(3):
                         if(a!=action):
                             self.z[self.features[a][f]]=0
                     self.z[self.features[action][f]]=1
                                        
                     
-                reward, state, done= next_step(state,action)
+                reward, state, done= next_step(state,action) #perform next step
                 
                 #stats
                 stats.episode_rewards[e] += reward
@@ -98,8 +98,8 @@ class Sarsa_lambda():
                     action=self.greedy()
                     delta += self.gamma * self.Q[action]
 
-                self.teta+= (self.alpha/self.ntiles)*delta *self.z
-                self.compute_action_value(action)    
+                self.teta+= (self.alpha/self.ntiles)*delta *self.z #updating parameters
+                self.compute_action_value(action)    #compute action value
                 if done:
                     break
                 self.z=self.gamma*self.lmbda * self.z#decaying trace
